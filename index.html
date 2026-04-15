@@ -18,6 +18,8 @@
             --high: #f59e0b;
             --medium: #3b82f6;
             --low: #10b981;
+            --whatsapp: #25d366;
+            --whatsapp-dark: #128c7e;
             --bg: #f8fafc;
             --card: #ffffff;
             --text: #1e293b;
@@ -220,6 +222,10 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
         }
 
         .btn-primary {
@@ -238,6 +244,17 @@
 
         .btn-secondary:hover {
             background: #cbd5e1;
+        }
+
+        .btn-whatsapp {
+            background: var(--whatsapp);
+            color: white;
+            margin-bottom: 1rem;
+            width: 100%;
+        }
+
+        .btn-whatsapp:hover {
+            background: var(--whatsapp-dark);
         }
 
         .btn:disabled {
@@ -448,6 +465,12 @@
             <!-- Result Page -->
             <div class="result-card" id="result">
                 <div id="resultContent"></div>
+                <button class="btn btn-whatsapp" id="whatsappBtn" onclick="sendToWhatsApp()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    Send to Landlord
+                </button>
                 <button class="restart-btn" onclick="restart()">Start New Assessment</button>
             </div>
         </div>
@@ -498,7 +521,7 @@
         const safetyOptions = [
             { id: 'yes', title: 'Yes, property is safe to occupy', weight: 0 },
             { id: 'unsure', title: 'Unsure', weight: 15 },
-            { id: 'no', title: 'No, may not be safe', weight: 40 }
+            { id: 'no', title: 'No, may not be safe', weight: 30 }
         ];
 
         const services = [
@@ -813,6 +836,9 @@
 
             resultContent.innerHTML = html;
 
+            // Store level for WhatsApp sharing
+            userData.calculatedLevel = text;
+
             document.getElementById('q6').classList.remove('active');
             document.getElementById('result').classList.add('active');
             window.scrollTo(0, 0);
@@ -906,6 +932,38 @@
             return info;
         }
 
+        function sendToWhatsApp() {
+            const phone = "9233429333084";
+            const issue = issueTypes.find(i => i.id === userData.issueType)?.title || 'Unknown';
+            const location = locations.find(l => l.id === userData.location)?.title || 'Not specified';
+            const urgency = userData.calculatedLevel || 'Unknown';
+            
+            // Get first 3 steps
+            let steps = [];
+            if (urgency.includes('Emergency')) {
+                steps = ['Contact emergency services immediately if there is immediate danger to life or property', 'Notify landlord/property manager by phone immediately', 'If safe to do so, take steps to prevent further damage'];
+            } else if (urgency.includes('High')) {
+                steps = ['Contact landlord/property manager within 24 hours', 'Document the issue with clear photos showing the extent of the problem', 'If safe, take temporary measures to prevent the issue worsening'];
+            } else if (urgency.includes('Medium')) {
+                steps = ['Report the issue to your landlord/property manager in writing (email or portal)', 'Take photos to document the current state', 'Request a repair timeframe and confirm the appointment in writing'];
+            } else {
+                steps = ['Report the issue to your landlord/property manager at your next scheduled communication', 'Document the issue with a photo for reference', 'Keep a note of when you reported it'];
+            }
+
+            const message = `*Maintenance Triage Report*\n\n` +
+                `*Urgency:* ${urgency}\n` +
+                `*Issue:* ${issue}\n` +
+                `*Location:* ${location}\n\n` +
+                `*Recommended Next Steps:*\n` +
+                `• ${steps[0]}\n` +
+                `• ${steps[1]}\n` +
+                `• ${steps[2]}\n\n` +
+                `_Note: The full report is available._`;
+
+            const encodedMessage = encodeURIComponent(message);
+            window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
+        }
+
         function restart() {
             userData.issueType = null;
             userData.location = null;
@@ -913,6 +971,7 @@
             userData.safety = null;
             userData.services = [];
             userData.evidence = null;
+            userData.calculatedLevel = null;
             currentStep = 1;
 
             document.getElementById('result').classList.remove('active');
