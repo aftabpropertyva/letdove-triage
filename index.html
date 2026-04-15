@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LetDove Maintenance Triage Check</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --emergency: #dc2626;
+            --high: #f59e0b;
+            --medium: #3b82f6;
+            --low: #10b981;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            padding: 2rem 0;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-light);
+            font-size: 1rem;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .question-card {
+            display: none;
+        }
+
+        .question-card.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .question-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text);
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            padding: 0 0.5rem;
+        }
+
+        .step {
+            width: 14%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            transition: background 0.3s;
+        }
+
+        .step.completed {
+            background: var(--primary);
+        }
+
+        .step.active {
+            background: var(--primary);
+        }
+
+        .options {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .option {
+            padding: 1rem 1.25rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .option:hover {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .option.selected {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .option-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .option-desc {
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+
+        .checkbox-group {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .checkbox-option {
+            display: flex;
+            align-items: flex-start;
+            padding: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .checkbox-option:hover {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .checkbox-option input[type="checkbox"] {
+            margin-right: 0.75rem;
+            margin-top: 0.25rem;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-option.checked {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .radio-group {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .radio-option:hover {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .radio-option input[type="radio"] {
+            margin-right: 0.75rem;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .radio-option.checked {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text);
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .result-card {
+            display: none;
+        }
+
+        .result-card.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .urgency-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 1.125rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .urgency-emergency {
+            background: #fef2f2;
+            color: var(--emergency);
+            border: 2px solid var(--emergency);
+        }
+
+        .urgency-high {
+            background: #fef3c7;
+            color: #92400e;
+            border: 2px solid var(--high);
+        }
+
+        .urgency-medium {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 2px solid var(--medium);
+        }
+
+        .urgency-low {
+            background: #d1fae5;
+            color: #065f46;
+            border: 2px solid var(--low);
+        }
+
+        .result-section {
+            margin-bottom: 2rem;
+        }
+
+        .result-section h3 {
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+
+        .result-section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .result-section li {
+            padding: 0.75rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .result-section li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .warning-box {
+            background: #fef2f2;
+            border: 2px solid var(--emergency);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .warning-box h4 {
+            color: var(--emergency);
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .info-box {
+            background: #eff6ff;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-box h4 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .restart-btn {
+            background: var(--border);
+            color: var(--text);
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .restart-btn:hover {
+            background: #cbd5e1;
+        }
+
+        @media (max-width: 640px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏠 LetDove Maintenance Triage</h1>
+            <p>Quick diagnosis for maintenance issues</p>
+        </div>
+
+        <div class="card">
+            <div class="step-indicator" id="stepIndicator"></div>
+
+            <!-- Question 1: Issue Type -->
+            <div class="question-card active" id="q1">
+                <h2 class="question-title">What kind of issue are you experiencing?</h2>
+                <div class="options" id="issueTypeOptions"></div>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="nextQuestion(1)" id="nextBtn1" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Question 2: Location -->
+            <div class="question-card" id="q2">
+                <h2 class="question-title">Where is the issue located?</h2>
+                <div class="options" id="locationOptions"></div>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="prevQuestion(2)">Back</button>
+                    <button class="btn btn-primary" onclick="nextQuestion(2)" id="nextBtn2" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Question 3: Severity -->
+            <div class="question-card" id="q3">
+                <h2 class="question-title">How would you describe the severity?</h2>
+                <div class="radio-group" id="severityOptions"></div>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="prevQuestion(3)">Back</button>
+                    <button class="btn btn-primary" onclick="nextQuestion(3)" id="nextBtn3" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Question 4: Safety -->
+            <div class="question-card" id="q4">
+                <h2 class="question-title">Can the tenant stay in the property safely?</h2>
+                <div class="radio-group" id="safetyOptions"></div>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="prevQuestion(4)">Back</button>
+                    <button class="btn btn-primary" onclick="nextQuestion(4)" id="nextBtn4" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Question 5: Essential Services -->
+            <div class="question-card" id="q5">
+                <h2 class="question-title">Which essential services are affected? (Select all that apply)</h2>
+                <div class="checkbox-group" id="servicesOptions"></div>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="prevQuestion(5)">Back</button>
+                    <button class="btn btn-primary" onclick="nextQuestion(5)" id="nextBtn5">Continue</button>
+                </div>
+            </div>
+
+            <!-- Question 6: Evidence -->
+            <div class="question-card" id="q6">
+                <h2 class="question-title">Do you have photos or evidence of the issue?</h2>
+                <div class="radio-group" id="evidenceOptions"></div>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="prevQuestion(6)">Back</button>
+                    <button class="btn btn-primary" onclick="calculateResult()" id="nextBtn6" disabled>Get Diagnosis</button>
+                </div>
+            </div>
+
+            <!-- Result Page -->
+            <div class="result-card" id="result">
+                <div id="resultContent"></div>
+                <button class="restart-btn" onclick="restart()">Start New Assessment</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data structure
+        const userData = {
+            issueType: null,
+            location: null,
+            severity: null,
+            safety: null,
+            services: [],
+            evidence: null
+        };
+
+        let currentStep = 1;
+
+        // Question data
+        const issueTypes = [
+            { id: 'water_leak', title: 'Water Leak', desc: 'Dripping, flooding, or water damage', weight: 25 },
+            { id: 'heating', title: 'Heating Issue', desc: 'No heating or boiler problems', weight: 20 },
+            { id: 'electricity', title: 'Electrical Problem', desc: 'Power outage, faulty wiring, or dangerous electrics', weight: 25 },
+            { id: 'damp', title: 'Damp or Mould', desc: 'Moisture, condensation, or mould growth', weight: 15 },
+            { id: 'appliance', title: 'Appliance Fault', desc: 'Broken washing machine, oven, etc.', weight: 10 },
+            { id: 'lock_security', title: 'Lock or Security', desc: 'Broken locks, windows, or security issues', weight: 20 },
+            { id: 'neighbour', title: 'Neighbour Issue', desc: 'Noise, boundary disputes, or antisocial behavior', weight: 5 },
+            { id: 'damage', title: 'General Damage', desc: 'Broken fixtures, wall damage, or wear and tear', weight: 10 }
+        ];
+
+        const locations = [
+            { id: 'kitchen', title: 'Kitchen' },
+            { id: 'bathroom', title: 'Bathroom' },
+            { id: 'bedroom', title: 'Bedroom' },
+            { id: 'living_room', title: 'Living Room' },
+            { id: 'outside', title: 'Outside/External' },
+            { id: 'whole_property', title: 'Whole Property' },
+            { id: 'communal', title: 'Communal Area' }
+        ];
+
+        const severityLevels = [
+            { id: 'minor', title: 'Minor inconvenience', desc: 'Can manage day-to-day normally', weight: 5 },
+            { id: 'affecting', title: 'Affecting normal use', desc: 'Disrupting daily activities', weight: 20 },
+            { id: 'urgent', title: 'Urgent', desc: 'Needs fixing soon', weight: 30 },
+            { id: 'safety', title: 'Possible safety issue', desc: 'Could be dangerous', weight: 40 }
+        ];
+
+        const safetyOptions = [
+            { id: 'yes', title: 'Yes, property is safe to occupy', weight: 0 },
+            { id: 'unsure', title: 'Unsure', weight: 15 },
+            { id: 'no', title: 'No, may not be safe', weight: 40 }
+        ];
+
+        const services = [
+            { id: 'water', title: 'Water supply', weight: 25 },
+            { id: 'heating', title: 'Heating', weight: 20 },
+            { id: 'power', title: 'Electricity', weight: 25 },
+            { id: 'security', title: 'Security (locks/access)', weight: 20 },
+            { id: 'none', title: 'None of the above', weight: 0 }
+        ];
+
+        const evidenceOptions = [
+            { id: 'yes', title: 'Yes, I have photos/videos' },
+            { id: 'no', title: 'No, not yet' }
+        ];
+
+        // Initialize
+        function init() {
+            renderStepIndicator();
+            renderIssueTypes();
+            renderLocations();
+            renderSeverity();
+            renderSafety();
+            renderServices();
+            renderEvidence();
+        }
+
+        function renderStepIndicator() {
+            const indicator = document.getElementById('stepIndicator');
+            indicator.innerHTML = '';
+            for (let i = 1; i <= 6; i++) {
+                const step = document.createElement('div');
+                step.className = 'step';
+                if (i < currentStep) step.classList.add('completed');
+                if (i === currentStep) step.classList.add('active');
+                indicator.appendChild(step);
+            }
+        }
+
+        function renderIssueTypes() {
+            const container = document.getElementById('issueTypeOptions');
+            container.innerHTML = '';
+            issueTypes.forEach(type => {
+                const option = document.createElement('div');
+                option.className = 'option';
+                option.innerHTML = `
+                    <div class="option-title">${type.title}</div>
+                    <div class="option-desc">${type.desc}</div>
+                `;
+                option.onclick = () => selectIssueType(type.id, option);
+                container.appendChild(option);
+            });
+        }
+
+        function selectIssueType(id, element) {
+            document.querySelectorAll('#issueTypeOptions .option').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            userData.issueType = id;
+            document.getElementById('nextBtn1').disabled = false;
+        }
+
+        function renderLocations() {
+            const container = document.getElementById('locationOptions');
+            container.innerHTML = '';
+            locations.forEach(loc => {
+                const option = document.createElement('div');
+                option.className = 'option';
+                option.innerHTML = `<div class="option-title">${loc.title}</div>`;
+                option.onclick = () => selectLocation(loc.id, option);
+                container.appendChild(option);
+            });
+        }
+
+        function selectLocation(id, element) {
+            document.querySelectorAll('#locationOptions .option').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            userData.location = id;
+            document.getElementById('nextBtn2').disabled = false;
+        }
+
+        function renderSeverity() {
+            const container = document.getElementById('severityOptions');
+            container.innerHTML = '';
+            severityLevels.forEach(level => {
+                const option = document.createElement('div');
+                option.className = 'radio-option';
+                option.innerHTML = `
+                    <input type="radio" name="severity" value="${level.id}" id="sev_${level.id}">
+                    <label for="sev_${level.id}" style="cursor: pointer; flex: 1;">
+                        <div class="option-title">${level.title}</div>
+                        <div class="option-desc">${level.desc}</div>
+                    </label>
+                `;
+                option.onclick = () => selectSeverity(level.id, option);
+                container.appendChild(option);
+            });
+        }
+
+        function selectSeverity(id, element) {
+            document.querySelectorAll('#severityOptions .radio-option').forEach(el => el.classList.remove('checked'));
+            element.classList.add('checked');
+            document.getElementById(`sev_${id}`).checked = true;
+            userData.severity = id;
+            document.getElementById('nextBtn3').disabled = false;
+        }
+
+        function renderSafety() {
+            const container = document.getElementById('safetyOptions');
+            container.innerHTML = '';
+            safetyOptions.forEach(opt => {
+                const option = document.createElement('div');
+                option.className = 'radio-option';
+                option.innerHTML = `
+                    <input type="radio" name="safety" value="${opt.id}" id="safe_${opt.id}">
+                    <label for="safe_${opt.id}" style="cursor: pointer; flex: 1;">${opt.title}</label>
+                `;
+                option.onclick = () => selectSafety(opt.id, option);
+                container.appendChild(option);
+            });
+        }
+
+        function selectSafety(id, element) {
+            document.querySelectorAll('#safetyOptions .radio-option').forEach(el => el.classList.remove('checked'));
+            element.classList.add('checked');
+            document.getElementById(`safe_${id}`).checked = true;
+            userData.safety = id;
+            document.getElementById('nextBtn4').disabled = false;
+        }
+
+        function renderServices() {
+            const container = document.getElementById('servicesOptions');
+            container.innerHTML = '';
+            services.forEach(service => {
+                const option = document.createElement('div');
+                option.className = 'checkbox-option';
+                option.innerHTML = `
+                    <input type="checkbox" value="${service.id}" id="serv_${service.id}">
+                    <label for="serv_${service.id}" style="cursor: pointer; flex: 1;">${service.title}</label>
+                `;
+                option.onclick = (e) => {
+                    if (e.target.tagName !== 'INPUT') {
+                        document.getElementById(`serv_${service.id}`).click();
+                    }
+                    toggleService(service.id, option);
+                };
+                container.appendChild(option);
+            });
+        }
+
+        function toggleService(id, element) {
+            const checkbox = document.getElementById(`serv_${id}`);
+            const isChecked = checkbox.checked;
+            
+            if (id === 'none') {
+                if (isChecked) {
+                    userData.services = ['none'];
+                    services.forEach(s => {
+                        if (s.id !== 'none') {
+                            document.getElementById(`serv_${s.id}`).checked = false;
+                            document.querySelector(`#serv_${s.id}`).parentElement.classList.remove('checked');
+                        }
+                    });
+                }
+            } else {
+                if (isChecked) {
+                    const noneCheckbox = document.getElementById('serv_none');
+                    if (noneCheckbox.checked) {
+                        noneCheckbox.checked = false;
+                        document.querySelector('#serv_none').parentElement.classList.remove('checked');
+                    }
+                    userData.services = userData.services.filter(s => s !== 'none');
+                }
+            }
+
+            userData.services = Array.from(document.querySelectorAll('#servicesOptions input:checked')).map(el => el.value);
+            
+            if (isChecked) {
+                element.classList.add('checked');
+            } else {
+                element.classList.remove('checked');
+            }
+        }
+
+        function renderEvidence() {
+            const container = document.getElementById('evidenceOptions');
+            container.innerHTML = '';
+            evidenceOptions.forEach(opt => {
+                const option = document.createElement('div');
+                option.className = 'radio-option';
+                option.innerHTML = `
+                    <input type="radio" name="evidence" value="${opt.id}" id="evid_${opt.id}">
+                    <label for="evid_${opt.id}" style="cursor: pointer; flex: 1;">${opt.title}</label>
+                `;
+                option.onclick = () => selectEvidence(opt.id, option);
+                container.appendChild(option);
+            });
+        }
+
+        function selectEvidence(id, element) {
+            document.querySelectorAll('#evidenceOptions .radio-option').forEach(el => el.classList.remove('checked'));
+            element.classList.add('checked');
+            document.getElementById(`evid_${id}`).checked = true;
+            userData.evidence = id;
+            document.getElementById('nextBtn6').disabled = false;
+        }
+
+        function nextQuestion(current) {
+            document.getElementById(`q${current}`).classList.remove('active');
+            document.getElementById(`q${current + 1}`).classList.add('active');
+            currentStep = current + 1;
+            renderStepIndicator();
+            window.scrollTo(0, 0);
+        }
+
+        function prevQuestion(current) {
+            document.getElementById(`q${current}`).classList.remove('active');
+            document.getElementById(`q${current - 1}`).classList.add('active');
+            currentStep = current - 1;
+            renderStepIndicator();
+            window.scrollTo(0, 0);
+        }
+
+        function calculateResult() {
+            let urgencyScore = 0;
+
+            // Issue type weight
+            const issue = issueTypes.find(i => i.id === userData.issueType);
+            if (issue) urgencyScore += issue.weight;
+
+            // Severity weight
+            const severity = severityLevels.find(s => s.id === userData.severity);
+            if (severity) urgencyScore += severity.weight;
+
+            // Safety weight
+            const safety = safetyOptions.find(s => s.id === userData.safety);
+            if (safety) urgencyScore += safety.weight;
+
+            // Services affected weight
+            userData.services.forEach(serviceId => {
+                const service = services.find(s => s.id === serviceId);
+                if (service) urgencyScore += service.weight;
+            });
+
+            // Determine urgency level
+            let urgencyLevel, urgencyClass, urgencyText;
+            if (urgencyScore >= 90) {
+                urgencyLevel = 'EMERGENCY';
+                urgencyClass = 'urgency-emergency';
+                urgencyText = 'Emergency';
+            } else if (urgencyScore >= 70) {
+                urgencyLevel = 'HIGH';
+                urgencyClass = 'urgency-high';
+                urgencyText = 'High Priority';
+            } else if (urgencyScore >= 40) {
+                urgencyLevel = 'MEDIUM';
+                urgencyClass = 'urgency-medium';
+                urgencyText = 'Medium Priority';
+            } else {
+                urgencyLevel = 'LOW';
+                urgencyClass = 'urgency-low';
+                urgencyText = 'Low Priority';
+            }
+
+            // Generate result
+            displayResult(urgencyLevel, urgencyClass, urgencyText, urgencyScore);
+        }
+
+        function displayResult(level, cssClass, text, score) {
+            const resultContent = document.getElementById('resultContent');
+            
+            let issueCategory = issueTypes.find(i => i.id === userData.issueType)?.title || 'Unknown';
+            let nextSteps = getNextSteps(level, userData);
+            let warningMessage = getWarningMessage(level, userData);
+            let informationNeeded = getInformationNeeded(userData);
+
+            let html = `
+                <div class="urgency-badge ${cssClass}">${text}</div>
+                <h2 style="margin-bottom: 1rem;">Diagnosis Summary</h2>
+                <p style="margin-bottom: 1.5rem; color: var(--text-light);">
+                    <strong>Issue type:</strong> ${issueCategory}<br>
+                    <strong>Location:</strong> ${locations.find(l => l.id === userData.location)?.title || 'Not specified'}
+                </p>
+            `;
+
+            if (warningMessage) {
+                html += warningMessage;
+            }
+
+            html += `
+                <div class="result-section">
+                    <h3>📋 Recommended Next Steps</h3>
+                    <ul>${nextSteps}</ul>
+                </div>
+            `;
+
+            if (informationNeeded.length > 0) {
+                html += `
+                    <div class="info-box">
+                        <h4>📸 Information to Collect</h4>
+                        <ul style="margin-top: 0.5rem; list-style: none; padding-left: 0;">
+                            ${informationNeeded.map(info => `<li style="padding: 0.25rem 0;">• ${info}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            html += `
+                <p style="font-size: 0.875rem; color: var(--text-light); margin-top: 1.5rem;">
+                    <strong>Important:</strong> This tool provides general guidance only and does not constitute professional advice. 
+                    Always consult qualified professionals for complex or urgent issues.
+                </p>
+            `;
+
+            resultContent.innerHTML = html;
+
+            document.getElementById('q6').classList.remove('active');
+            document.getElementById('result').classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        function getNextSteps(level, data) {
+            let steps = [];
+
+            if (level === 'EMERGENCY') {
+                steps.push('Contact emergency services immediately if there is immediate danger to life or property');
+                steps.push('Notify landlord/property manager by phone immediately');
+                steps.push('If safe to do so, take steps to prevent further damage (e.g., turn off water supply)');
+                steps.push('Document the issue with photos and videos');
+                steps.push('Do not attempt repairs yourself if the issue involves gas, electricity, or structural safety');
+            } else if (level === 'HIGH') {
+                steps.push('Contact landlord/property manager within 24 hours');
+                steps.push('Document the issue with clear photos showing the extent of the problem');
+                steps.push('If safe, take temporary measures to prevent the issue worsening');
+                steps.push('Keep a written record of when the issue was reported and any responses received');
+                steps.push('If essential services are affected, request an emergency repair timeframe');
+            } else if (level === 'MEDIUM') {
+                steps.push('Report the issue to your landlord/property manager in writing (email or portal)');
+                steps.push('Take photos to document the current state');
+                steps.push('Request a repair timeframe and confirm the appointment in writing');
+                steps.push('Monitor the issue to ensure it doesn\'t worsen');
+            } else {
+                steps.push('Report the issue to your landlord/property manager at your next scheduled communication');
+                steps.push('Document the issue with a photo for reference');
+                steps.push('Keep a note of when you reported it');
+                steps.push('This can typically wait for routine maintenance scheduling');
+            }
+
+            return steps.map(step => `<li>${step}</li>`).join('');
+        }
+
+        function getWarningMessage(level, data) {
+            if (level === 'EMERGENCY' || data.safety === 'no') {
+                return `
+                    <div class="warning-box">
+                        <h4>⚠️ Immediate Action Required</h4>
+                        <p>This issue requires urgent attention. If there is any risk to safety, consider temporary alternative accommodation and contact emergency services if necessary.</p>
+                    </div>
+                `;
+            }
+
+            if (data.services.includes('water') || data.services.includes('power') || data.services.includes('heating')) {
+                return `
+                    <div class="warning-box">
+                        <h4>⚠️ Essential Service Affected</h4>
+                        <p>Loss of essential services (water, heating, or power) may make the property uninhabitable. Landlords are legally required to make emergency repairs within 24 hours.</p>
+                    </div>
+                `;
+            }
+
+            return '';
+        }
+
+        function getInformationNeeded(data) {
+            let info = [];
+
+            if (data.evidence === 'no') {
+                info.push('Clear photos showing the full extent of the issue');
+                info.push('Video if the issue is intermittent or involves sounds');
+            }
+
+            info.push('Date and time the issue first occurred');
+            info.push('Whether the issue is getting worse');
+            info.push('Any steps you\'ve already taken');
+
+            if (data.issueType === 'water_leak') {
+                info.push('Whether the leak is constant or intermittent');
+                info.push('Source of the leak if visible');
+            }
+
+            if (data.issueType === 'heating') {
+                info.push('Boiler error codes if displayed');
+                info.push('When heating was last serviced');
+            }
+
+            if (data.issueType === 'electricity') {
+                info.push('Which circuits or areas are affected');
+                info.push('Whether fuses have tripped');
+            }
+
+            if (data.issueType === 'damp') {
+                info.push('How long the damp has been present');
+                info.push('Whether condensation is present on windows');
+                info.push('Ventilation in the affected area');
+            }
+
+            return info;
+        }
+
+        function restart() {
+            userData.issueType = null;
+            userData.location = null;
+            userData.severity = null;
+            userData.safety = null;
+            userData.services = [];
+            userData.evidence = null;
+            currentStep = 1;
+
+            document.getElementById('result').classList.remove('active');
+            document.getElementById('q1').classList.add('active');
+            
+            document.querySelectorAll('.option').forEach(el => el.classList.remove('selected'));
+            document.querySelectorAll('.radio-option').forEach(el => el.classList.remove('checked'));
+            document.querySelectorAll('.checkbox-option').forEach(el => el.classList.remove('checked'));
+            document.querySelectorAll('input[type="radio"]').forEach(el => el.checked = false);
+            document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
+            
+            document.querySelectorAll('.btn-primary').forEach(btn => btn.disabled = true);
+            document.getElementById('nextBtn5').disabled = false;
+
+            renderStepIndicator();
+            window.scrollTo(0, 0);
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
